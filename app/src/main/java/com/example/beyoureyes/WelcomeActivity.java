@@ -1,8 +1,10 @@
 package com.example.beyoureyes;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +21,8 @@ public class WelcomeActivity extends AppCompatActivity {
     private TextView blindUserCount;
     private TextView volunteerCount;
     private View statsContainer;
+    private Button needHelpButton;
+    private Button volunteerButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +33,21 @@ public class WelcomeActivity extends AppCompatActivity {
         blindUserCount = findViewById(R.id.blindUserCount);
         volunteerCount = findViewById(R.id.volunteerCount);
         statsContainer = findViewById(R.id.statsContainer);
+        needHelpButton = findViewById(R.id.needHelpButton);
+        volunteerButton = findViewById(R.id.volunteerButton);
+
+        // 设置按钮点击事件
+        needHelpButton.setOnClickListener(v -> {
+            Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);
+            intent.putExtra("userType", "HELPER");
+            startActivity(intent);
+        });
+
+        volunteerButton.setOnClickListener(v -> {
+            Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);
+            intent.putExtra("userType", "VOLUNTEER");
+            startActivity(intent);
+        });
 
         // 加载统计数据
         loadStatistics();
