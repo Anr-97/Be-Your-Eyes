@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="250dp"
+    android:height="250dp"
+    android:viewportWidth="250"
+    android:viewportHeight="250">
+
+    <!-- 眼睛外形 -->
+    <path
+        android:fillColor="#005cf7"
+        android:pathData="M25,125 C25,125 75,45 125,45 C175,45 225,125 225,125 C225,125 175,205 125,205 C75,205 25,125 25,125 Z"/>
+    
+    <!-- 瞳孔 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M125,125m-45,0a45,45 0,1 1,90 0a45,45 0,1 1,-90 0"/>
+    
+    <!-- 瞳孔中心 -->
+    <path
+        android:fillColor="#005cf7"
+        android:pathData="M125,125m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"/>
+    
+    <!-- 眼睛高光 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M108,108m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
+
+    <!-- 装饰性圆点 -->
+    <path
+        android:fillColor="#005cf7"
+        android:pathData="M85,125m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+    <path
+        android:fillColor="#005cf7"
+        android:pathData="M165,125m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+</vector> 

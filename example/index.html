@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视界相助 - 原型展示</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .prototype-container {
+            width: 390px; /* iPhone 15 Pro width */
+            height: 844px; /* iPhone 15 Pro height */
+            border-radius: 55px;
+            overflow: hidden;
+            position: relative;
+            margin: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+        .prototype-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .prototype-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .prototype-label {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f3f4f6;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-white shadow-sm p-4 mb-6">
+        <h1 class="text-2xl font-bold text-center text-gray-800">视界相助 - 界面原型</h1>
+    </header>
+    
+    <div class="prototype-grid">
+        <div class="prototype-container">
+            <iframe src="pages/welcome.html" class="prototype-frame"></iframe>
+            <div class="prototype-label">欢迎页面</div>
+        </div>
+        <div class="prototype-container">
+            <iframe src="pages/auth.html" class="prototype-frame"></iframe>
+            <div class="prototype-label">登录/注册</div>
+        </div>
+        <div class="prototype-container">
+            <iframe src="pages/home.html" class="prototype-frame"></iframe>
+            <div class="prototype-label">主页面</div>
+        </div>
+        <div class="prototype-container">
+            <iframe src="pages/call.html" class="prototype-frame"></iframe>
+            <div class="prototype-label">视频通话</div>
+        </div>
+        <div class="prototype-container">
+            <iframe src="pages/profile.html" class="prototype-frame"></iframe>
+            <div class="prototype-label">个人资料</div>
+        </div>
+        <div class="prototype-container">
+            <iframe src="pages/history.html" class="prototype-frame"></iframe>
+            <div class="prototype-label">历史记录</div>
+        </div>
+        <div class="prototype-container">
+            <iframe src="pages/settings.html" class="prototype-frame"></iframe>
+            <div class="prototype-label">设置</div>
+        </div>
+    </div>
+</body>
+</html> 
