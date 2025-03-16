@@ -7,6 +7,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.beyoureyes.api.ApiClient;
 import com.example.beyoureyes.model.StatisticsResponse;
@@ -21,8 +23,6 @@ public class WelcomeActivity extends AppCompatActivity {
     private TextView blindUserCount;
     private TextView volunteerCount;
     private View statsContainer;
-    private Button needHelpButton;
-    private Button volunteerButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,18 +33,18 @@ public class WelcomeActivity extends AppCompatActivity {
         blindUserCount = findViewById(R.id.blindUserCount);
         volunteerCount = findViewById(R.id.volunteerCount);
         statsContainer = findViewById(R.id.statsContainer);
-        needHelpButton = findViewById(R.id.needHelpButton);
-        volunteerButton = findViewById(R.id.volunteerButton);
+        Button needHelpButton = findViewById(R.id.needHelpButton);
+        Button volunteerButton = findViewById(R.id.volunteerButton);
 
         // 设置按钮点击事件
         needHelpButton.setOnClickListener(v -> {
-            Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);
+            Intent intent = new Intent(WelcomeActivity.this, PrivacyActivity.class);
             intent.putExtra("userType", "HELPER");
             startActivity(intent);
         });
 
         volunteerButton.setOnClickListener(v -> {
-            Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);
+            Intent intent = new Intent(WelcomeActivity.this, PrivacyActivity.class);
             intent.putExtra("userType", "VOLUNTEER");
             startActivity(intent);
         });
@@ -59,7 +59,7 @@ public class WelcomeActivity extends AppCompatActivity {
 
         ApiClient.getApiService().getStatistics().enqueue(new Callback<StatisticsResponse>() {
             @Override
-            public void onResponse(Call<StatisticsResponse> call, Response<StatisticsResponse> response) {
+            public void onResponse(@NonNull Call<StatisticsResponse> call, @NonNull Response<StatisticsResponse> response) {
                 // 恢复正常显示状态
                 statsContainer.setAlpha(1.0f);
 
@@ -73,7 +73,7 @@ public class WelcomeActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<StatisticsResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<StatisticsResponse> call, @NonNull Throwable t) {
                 // 恢复正常显示状态
                 statsContainer.setAlpha(1.0f);
                 Log.e(TAG, "Network call failed", t);

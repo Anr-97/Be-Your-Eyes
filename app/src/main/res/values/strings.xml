@@ -1,6 +1,55 @@
 <resources>
-    <string name="app_name">Be Your Eyes</string>
+    <string name="app_name" translatable="false">Be Your Eyes</string>
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+  <string name="Privacy_list" translatable="false">
+感谢您使用 Be Your Eyes！\n\n
+我们非常重视您的隐私保护。在使用我们的服务之前，请仔细阅读以下内容：\n\n
+
+1. 信息收集\n
+我们可能会收集以下信息：\n
+- 基本个人信息：如姓名、电话号码、电子邮件地址等。\n
+- 位置信息：如 GPS 数据、IP 地址，用于匹配附近的志愿者。\n
+- 设备信息：如设备型号、操作系统、唯一设备标识符等。\n\n
+
+2. 信息使用\n
+我们收集的信息将用于：\n
+- 提供和改进服务。\n
+- 匹配盲人用户和志愿者。\n
+- 保障服务安全。\n\n
+
+3. 信息保护\n
+我们承诺：\n
+- 采取严格的安全措施保护您的信息。\n
+- 不会将您的信息用于其他商业用途。\n
+- 未经您的同意，不会向第三方分享您的信息。\n
+- 您的信息将存储于安全的服务器中，并采用加密技术保护数据传输过程。\n\n
+
+4. 第三方服务\n
+我们可能会与第三方服务提供商合作，以提供更好的服务。这些第三方服务提供商可能会收集和处理您的信息，具体请参考其隐私政策。\n\n
+
+5. 信息保留期限\n
+我们仅在实现本隐私协议所述目的所需的期限内保留您的信息，并在达到目的后及时删除或匿名化处理。\n\n
+
+6. 您的权利\n
+您有权：\n
+- 访问和更正您的个人信息。\n
+- 删除您的账户。\n
+- 撤回授权同意。\n\n
+
+7. 未成年人隐私保护\n
+我们不会在明知的情况下收集未成年人的个人信息。如果您是未成年人，请在监护人同意的前提下使用我们的服务。\n\n
+
+8. 隐私协议更新\n
+我们可能会不时更新本隐私协议。如有重大变更，我们将通过应用内通知或电子邮件等方式告知您。\n\n
+
+9. 联系我们\n
+如您对本隐私协议有任何疑问\n请联系我们：beyoureyes@qq.com。\n\n
+
+如您同意以上内容，请点击“同意并继续”按钮，否则请按返回键退出应用。
+</string>
+    <string name="privacy_title">隐私政策标题</string>
+    <string name="agree_and_continue">同意并继续</string>
+    <string name="privacy">隐私政策</string>
 </resources>
