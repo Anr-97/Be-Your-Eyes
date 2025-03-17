@@ -1,8 +1,8 @@
-package com.example.beyoureyes.api;
+package top.lanshive.beyoureyes.api;
 
-import com.example.beyoureyes.model.AuthRequest;
-import com.example.beyoureyes.model.AuthResponse;
-import com.example.beyoureyes.model.StatisticsResponse;
+import top.lanshive.beyoureyes.model.AuthRequest;
+import top.lanshive.beyoureyes.model.AuthResponse;
+import top.lanshive.beyoureyes.model.StatisticsResponse;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;

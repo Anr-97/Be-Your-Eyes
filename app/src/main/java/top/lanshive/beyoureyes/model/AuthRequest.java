@@ -1,4 +1,4 @@
-package com.example.beyoureyes.model;
+package top.lanshive.beyoureyes.model;
 
 public class AuthRequest {
     private String username;

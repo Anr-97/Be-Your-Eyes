@@ -6,17 +6,23 @@ REGISTER_URL = f"{BASE_URL}/register"
 LOGIN_URL = f"{BASE_URL}/login"
 STATISTICS_URL = f"{BASE_URL}/statistics"  # 新增统计端点URL
 
+# 测试用的邮箱和密码
+email = "lanshive@qq.com"
+password = "123456"
+
 # 定义测试数据
 register_data = {
-    "email": "12345@qq.com",  # 测试用的邮箱地址
-    "password": "123456",
-    "userType": "VOLUNTEER"
+    "email": email,  # 测试用的邮箱地址
+    "password": password,
+    "userType": "VOLUNTEER",
+    "code": "422092"  # 假设这是正确的验证码
 }
 
 login_data = {
-    "email": "tacenda@qq.com",
-    "password": "123456"
+    "email": email,
+    "password": password
 }
+
 
 # 通用的响应检查函数
 def check_response(response, success_codes=[200, 201]):
@@ -29,23 +35,34 @@ def check_response(response, success_codes=[200, 201]):
         print("响应内容:", response.text)
         return False
 
+
 # 测试注册接口
 def test_register():
     print("测试注册接口...")
     try:
+        print("注册数据:", register_data)
         response = requests.post(REGISTER_URL, json=register_data)
-        check_response(response)
+        if check_response(response):
+            print("注册成功！")
+        else:
+            print("注册失败，请检查注册数据或服务器日志。")
     except requests.exceptions.RequestException as e:
         print("注册请求失败，错误信息:", e)
+
 
 # 测试登录接口
 def test_login():
     print("\n测试登录接口...")
     try:
+        print("登录数据:", login_data)
         response = requests.post(LOGIN_URL, json=login_data)
-        check_response(response)
+        if check_response(response):
+            print("登录成功！")
+        else:
+            print("登录失败，请检查登录数据或服务器日志。")
     except requests.exceptions.RequestException as e:
         print("登录请求失败，错误信息:", e)
+
 
 # 测试统计接口
 def test_statistics():
@@ -61,8 +78,11 @@ def test_statistics():
                 print(f"VOLUNTEER 用户数量: {data['volunteers']}")
             else:
                 print("统计数据格式不正确，缺少字段！")
+        else:
+            print("统计接口请求失败，请检查服务器日志。")
     except requests.exceptions.RequestException as e:
         print("统计请求失败，错误信息:", e)
+
 
 # 主函数
 if __name__ == "__main__":

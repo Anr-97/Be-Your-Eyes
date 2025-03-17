@@ -1,4 +1,4 @@
-package com.example.beyoureyes.api;
+package top.lanshive.beyoureyes.api;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;

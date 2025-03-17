@@ -1,4 +1,4 @@
-package com.example.beyoureyes.model;
+package top.lanshive.beyoureyes.model;
 
 import com.google.gson.annotations.SerializedName;
 

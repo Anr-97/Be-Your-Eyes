@@ -8,18 +8,18 @@
     <fragment
         android:id="@+id/navigation_home"
         android:name="top.lanshive.beyoureyes.ui.home.HomeFragment"
-        android:label="@string/title_home"
+        android:label="首页"
         tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/navigation_dashboard"
-        android:name="top.lanshive.beyoureyes.ui.dashboard.DashboardFragment"
-        android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+        android:id="@+id/navigation_message"
+        android:name="top.lanshive.beyoureyes.ui.message.MessageFragment"
+        android:label="消息"
+        tools:layout="@layout/fragment_message" />
 
     <fragment
-        android:id="@+id/navigation_notifications"
-        android:name="top.lanshive.beyoureyes.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        android:id="@+id/navigation_profile"
+        android:name="top.lanshive.beyoureyes.ui.profile.ProfileFragment"
+        android:label="我的"
+        tools:layout="@layout/fragment_profile" />
 </navigation>

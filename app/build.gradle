@@ -1,13 +1,14 @@
 plugins {
     id 'com.android.application'
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
-    namespace 'com.example.beyoureyes'
+    namespace 'top.lanshive.beyoureyes'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.beyoureyes"
+        applicationId "top.lanshive.beyoureyes"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -24,16 +25,22 @@ android {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+    buildFeatures {
+        viewBinding true
+    }
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.10.0'
+    implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     
     // Navigation Component
-    implementation 'androidx.navigation:navigation-fragment:2.7.5'
-    implementation 'androidx.navigation:navigation-ui:2.7.5'
+    implementation 'androidx.navigation:navigation-fragment:2.6.0'
+    implementation 'androidx.navigation:navigation-ui:2.6.0'
     
     // Retrofit for network requests
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
@@ -45,4 +52,5 @@ dependencies {
     // Coroutines for async operations
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+    implementation libs.androidx.core.ktx
 } 
