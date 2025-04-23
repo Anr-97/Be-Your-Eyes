@@ -7,9 +7,9 @@
         android:title="首页" />
 
     <item
-        android:id="@+id/navigation_message"
-        android:icon="@drawable/ic_notifications"
-        android:title="消息" />
+        android:id="@+id/navigation_call"
+        android:icon="@drawable/ic_comment"
+        android:title="见闻" />
 
     <item
         android:id="@+id/navigation_profile"

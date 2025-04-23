@@ -1,9 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="accent">#FF4081</color>
+    <color name="black">#000000</color>
+    <color name="gray">#9E9E9E</color>
+    <color name="gray_light">#F5F5F5</color>
+
+        <!-- 基础颜色 -->
     <color name="primary_blue">#005cf7</color>
-    <color name="light_blue">#005cf7</color>
-    <color name="medium_blue">#005cf7</color>
-    <color name="gray">#757575</color>
+    <color name="primary_blue_dark">#0D5BCA</color>
+    <color name="primary_blue_light">#8AB4F8</color>
+    <color name="accent_color">#FF4081</color>
+
+    <!-- 文本颜色 -->
+    <color name="text_primary">#202124</color>
+    <color name="text_secondary">#5F6368</color>
+    <color name="text_tertiary">#80868B</color>
+    <color name="text_disabled">#BDBDBD</color>
+    <color name="white">#FFFFFF</color>
+    <color name="red">#FF0000</color>
+    <color name="white_alpha_80">#CCFFFFFF</color>
+    <color name="white_alpha_20">#33FFFFFF</color>
+
+    <!-- 背景颜色 -->
+    <color name="background_light">#F8F9FA</color>
+    <color name="background_card">#FFFFFF</color>
+
+    <!-- 分割线 -->
+    <color name="divider">#E0E0E0</color>
+    <color name="divider_light">#F0F0F0</color>
+
+    <!-- 图标颜色 -->
+    <color name="icon_gray">#757575</color>
+    <color name="icon_light">#BDBDBD</color>
+
+    <!-- 状态颜色 -->
+    <color name="success">#34A853</color>
+    <color name="warning">#FBBC05</color>
+    <color name="error">#EA4335</color>
+    <color name="info">#4285F4</color>
+
+        <!-- 基础应用颜色 -->
+    <color name="colorPrimary">#2196F3</color>
+    <color name="colorPrimaryDark">#1976D2</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <!-- 通话界面专用颜色 -->
+    <color name="background_color">#FAFAFA</color>
+    <color name="accept_button_color">#4CAF50</color>
+    <color name="reject_button_color">#F44336</color>
+    <color name="option_button_color">#EEEEEE</color>
+
+    <!-- 文字颜色 -->
+    <color name="text_hint">#9E9E9E</color>
+
+    <!-- 辅助颜色 -->
+    <color name="ripple_light">#33FFFFFF</color>
+    <color name="avatar_border">#DDDDDD</color>
 </resources>

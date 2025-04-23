@@ -1,18 +1,23 @@
 plugins {
     id 'com.android.application'
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
-    namespace 'top.lanshive.beyoureyes'
-    compileSdk 34
+    namespace 'xyz.lanshive.beyoureyes'
+    compileSdk 35
 
     defaultConfig {
-        applicationId "top.lanshive.beyoureyes"
+        applicationId "xyz.lanshive.beyoureyes"
         minSdk 24
         targetSdk 34
         versionCode 1
         versionName "1.0"
+    }
+
+    android.applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "视界之光.apk"
+        }
     }
 
     buildTypes {
@@ -21,36 +26,65 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = '11'
-    }
+
     buildFeatures {
         viewBinding true
+        dataBinding true
+    }
+}
+
+allprojects {
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile).tap {
+            configureEach {
+                options.compilerArgs << "-Xlint:deprecation"
+            }
+        }
     }
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    
+    implementation libs.androidx.appcompat.v170
+    implementation libs.material
+    implementation libs.androidx.constraintlayout.v221
+
     // Navigation Component
-    implementation 'androidx.navigation:navigation-fragment:2.6.0'
-    implementation 'androidx.navigation:navigation-ui:2.6.0'
-    
+    implementation libs.androidx.navigation.fragment.ktx
+    implementation libs.androidx.navigation.ui.ktx
+
     // Retrofit for network requests
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    
-    // OkHttp for logging
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.9.0'
-    
-    // Coroutines for async operations
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
-    implementation libs.androidx.core.ktx
-} 
+    implementation libs.retrofit
+    implementation libs.converter.gson
+    implementation libs.logging.interceptor
+
+    // Lifecycle
+    implementation libs.androidx.lifecycle.runtime
+    implementation libs.androidx.lifecycle.viewmodel
+    implementation libs.androidx.lifecycle.livedata
+    implementation libs.androidx.webkit
+
+    implementation libs.circleimageview
+
+    // CameraX
+    implementation libs.androidx.camera.core.v131
+    implementation libs.androidx.camera.camera2
+    implementation libs.androidx.camera.lifecycle.v142
+    implementation libs.androidx.camera.view.v142
+    implementation libs.androidx.camera.core
+
+    implementation libs.androidx.preference
+
+    // WebRTC
+    // https://mvnrepository.com/artifact/org.webrtc/google-webrtc
+//    implementation 'org.webrtc:google-webrtc:1.0.+'
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
+    // Socket.IO
+    implementation libs.socket.io.client
+}
+
+android.buildFeatures.buildConfig = true

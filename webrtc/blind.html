@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>盲人辅助平台 - 用户端</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .call-button {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .call-button:hover {
+      background-color: #45a049;
+    }
+    .call-button:active {
+      transform: scale(0.95);
+    }
+    .end-button {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: #f44336;
+      border: none;
+      color: white;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .end-button:hover {
+      background-color: #d32f2f;
+    }
+    .end-button:active {
+      transform: scale(0.95);
+    }
+    .status-indicator {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .status-idle {
+      background-color: #9e9e9e;
+    }
+    .status-connecting {
+      background-color: #ff9800;
+      animation: blink 1s infinite;
+    }
+    .status-connected {
+      background-color: #4CAF50;
+    }
+    @keyframes blink {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+    .time-counter {
+      font-family: monospace;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    /* 音量可视化 */
+    .audio-visualizer {
+      display: flex;
+      align-items: flex-end;
+      height: 60px;
+      width: 100%;
+      gap: 2px;
+    }
+    .audio-bar {
+      width: 4px;
+      background-color: #4CAF50;
+      height: 5px;
+      border-radius: 2px;
+      transition: height 0.1s ease;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <!-- 标题 -->
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-2xl font-bold text-gray-800">盲人辅助平台</h1>
+      <div class="flex items-center">
+        <div id="connectionStatus" class="status-indicator status-idle"></div>
+        <span id="statusText" class="text-sm text-gray-600">未连接</span>
+      </div>
+    </div>
+
+    <!-- 主界面 -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+  <div id="callUI" class="flex flex-col items-center">
+    <div id="callStateDisplay" class="mb-4 text-center">
+      <p class="text-lg font-medium mb-2">点击按钮呼叫志愿者</p>
+      <p class="text-gray-500 text-sm">志愿者将会通过视频为您提供帮助</p>
+    </div>
+    
+    <div id="audioVisualizer" class="audio-visualizer mb-6 hidden">
+      <!-- 这里会动态生成音频可视化条 -->
+    </div>
+    
+    <div id="buttonContainer" class="flex justify-center items-center gap-8">
+      <button id="callButton" class="call-button" aria-label="拨打电话">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+      </button>
+      
+      <button id="endCallButton" class="end-button hidden" aria-label="结束通话">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+        </svg>
+      </button>
+    </div>
+    
+    <div id="timeCounter" class="time-counter mt-4 hidden">00:00</div>
+  </div>
+</div>
+
+<!-- 连接模式切换 -->
+<div class="bg-white rounded-lg shadow-md p-4 mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h3 class="text-sm font-medium text-gray-700">连接模式</h3>
+      <p id="connectionModeDisplay" class="text-xs text-gray-500">正常模式</p>
+    </div>
+    <button id="toggleConnectionMode" class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600">
+      切换为中继模式
+    </button>
+  </div>
+</div>
+
+<!-- 音频和视频元素 -->
+<div class="hidden">
+  <audio id="remoteAudio" autoplay></audio>
+  <video id="localVideo" autoplay muted style="display: none;"></video>
+  <video id="remoteVideo" autoplay style="display: none;"></video>
+</div>
+
+<!-- 状态消息 -->
+<div id="statusMessage" class="fixed bottom-0 left-0 right-0 bg-blue-500 text-white p-4 transform translate-y-full transition-transform duration-300 ease-in-out">
+  <p id="statusMessageText" class="text-center">状态消息</p>
+</div>
+
+<!-- 调试日志 -->
+<div id="debugLog" class="debug-log">
+  <div id="logEntries"></div>
+</div>
+</div>
+
+<script>
+
+// 用户ID (模拟)
+
+const userId = 'user_' + Math.floor(Math.random() * 1000000).toString();
+
+
+// WebRTC 配置
+
+let iceServers = {
+
+iceServers: [
+
+{
+
+urls: "stun:stun.l.google.com:19302"
+
+},
+
+{
+
+urls: "turn:www.lanshive.xyz:3478",
+
+username: "lanshive",
+
+credential: "2382021041zl"
+
+},
+
+// 添加TLS版本作为备选
+
+{
+
+urls: "turns:www.lanshive.xyz:5349",
+
+username: "lanshive",
+
+credential: "2382021041zl"
+
+}
+
+],
+
+iceTransportPolicy: "all" // 可选改为"relay"强制使用TURN
+
+};
+
+
+// 连接到信令服务器
+
+const socket = io('https://www.lanshive.xyz:8080', {
+
+reconnectionDelayMax: 10000,
+
+transports: ['websocket']
+
+});
+
+
+// DOM 元素
+
+const callButton = document.getElementById('callButton');
+
+const endCallButton = document.getElementById('endCallButton');
+
+const statusText = document.getElementById('statusText');
+
+const connectionStatus = document.getElementById('connectionStatus');
+
+const callStateDisplay = document.getElementById('callStateDisplay');
+
+const timeCounter = document.getElementById('timeCounter');
+
+const audioVisualizer = document.getElementById('audioVisualizer');
+
+const localVideo = document.getElementById('localVideo');
+
+const remoteVideo = document.getElementById('remoteVideo');
+
+const remoteAudio = document.getElementById('remoteAudio');
+
+const statusMessage = document.getElementById('statusMessage');
+
+const statusMessageText = document.getElementById('statusMessageText');
+
+const toggleConnectionMode = document.getElementById('toggleConnectionMode');
+
+const connectionModeDisplay = document.getElementById('connectionModeDisplay');
+
+const debugLog = document.getElementById('debugLog');
+
+const logEntries = document.getElementById('logEntries');
+
+
+// 调试模式开关 (开发阶段设为true，生产环境设为false)
+
+const DEBUG_MODE = true;
+
+if (DEBUG_MODE) {
+
+debugLog.style.display = 'block';
+
+}
+
+
+// WebRTC 变量
+
+let localStream = null;
+
+let peerConnection = null;
+
+let currentRoom = null;
+
+let callTimer = null;
+
+let seconds = 0;
+
+let audioContext = null;
+
+let analyser = null;
+
+let dataArray = null;
+
+let visualizerBars = [];
+
+let currentRequestId = null;
+
+let isRelayMode = false;
+
+let iceTimeoutId = null;
+
+let iceGatheringTimeoutId = null;
+
+let connectionAttempts = 0;
+
+const MAX_CONNECTION_ATTEMPTS = 2;
+
+let connectionState = 'idle';
+let lastConnectionState = 'idle';
+
+
+// 日志函数
+
+function log(message, type = 'info') {
+
+const timestamp = new Date().toTimeString().split(' ')[0];
+
+const entry = document.createElement('div');
+
+entry.classList.add('log-entry');
+
+entry.textContent = `[${timestamp}] [${type}] ${message}`;
+
+
+if (type === 'error') {
+
+entry.style.color = 'red';
+
+} else if (type === 'warning') {
+
+entry.style.color = 'orange';
+
+} else if (type === 'success') {
+
+entry.style.color = 'green';
+
+}
+
+
+logEntries.appendChild(entry);
+
+logEntries.scrollTop = logEntries.scrollHeight;
+
+
+// 同时在控制台输出
+// 映射日志类型到console的合法方法
+const consoleMethod = type === 'warning' ? 'warn' : 
+                      type === 'error' ? 'error' : 
+                      'log'; // 'success'和'info'都使用log方法
+console[consoleMethod](message);
+}
+
+
+// 初始化音频可视化
+function initAudioVisualizer() {
+// 创建30个条
+
+for (let i = 0; i < 30; i++) {
+
+const bar = document.createElement('div');
+
+bar.className = 'audio-bar';
+
+audioVisualizer.appendChild(bar);
+
+visualizerBars.push(bar);
+
+}
+
+}
+
+
+// 更新音频可视化
+
+function updateAudioVisualizer() {
+
+if (!analyser) return;
+
+
+analyser.getByteFrequencyData(dataArray);
+
+
+// 仅使用部分频率数据
+
+const step = Math.floor(dataArray.length / visualizerBars.length);
+
+
+for (let i = 0; i < visualizerBars.length; i++) {
+
+const value = dataArray[i * step];
+
+const height = Math.max(3, (value / 255) * 60); // 最小高度3px，最大60px
+
+visualizerBars[i].style.height = `${height}px`;
+
+}
+
+
+requestAnimationFrame(updateAudioVisualizer);
+
+}
+
+
+// 初始化音频分析
+
+function setupAudioAnalysis(stream) {
+
+if (!stream) return;
+
+
+try {
+
+audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+analyser = audioContext.createAnalyser();
+
+const source = audioContext.createMediaStreamSource(stream);
+
+
+analyser.fftSize = 256;
+
+analyser.smoothingTimeConstant = 0.7;
+
+source.connect(analyser);
+
+
+dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+audioVisualizer.classList.remove('hidden');
+
+updateAudioVisualizer();
+
+} catch (error) {
+
+log('设置音频分析器失败: ' + error.message, 'error');
+
+}
+
+}
+
+
+// 显示状态消息
+
+function showStatusMessage(message, duration = 3000) {
+
+statusMessageText.textContent = message;
+
+statusMessage.style.transform = 'translateY(0)';
+
+
+setTimeout(() => {
+
+statusMessage.style.transform = 'translateY(100%)';
+
+}, duration);
+
+}
+
+
+// 更新通话计时器
+
+function updateCallTimer() {
+
+seconds++;
+
+const minutes = Math.floor(seconds / 60);
+
+const remainingSeconds = seconds % 60;
+
+timeCounter.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+
+}
+
+
+// 开始通话计时
+
+function startCallTimer() {
+
+seconds = 0;
+
+timeCounter.textContent = '00:00';
+
+timeCounter.classList.remove('hidden');
+
+callTimer = setInterval(updateCallTimer, 1000);
+
+}
+
+
+// 停止通话计时
+
+function stopCallTimer() {
+
+if (callTimer) {
+
+clearInterval(callTimer);
+
+callTimer = null;
+
+}
+
+timeCounter.classList.add('hidden');
+
+}
+
+
+// 切换连接模式
+
+function toggleMode() {
+
+isRelayMode = !isRelayMode;
+
+
+if (isRelayMode) {
+
+iceServers.iceTransportPolicy = "relay";
+
+toggleConnectionMode.textContent = "切换为正常模式";
+
+connectionModeDisplay.textContent = "强制中继模式";
+
+log('已切换到强制中继模式', 'info');
+
+} else {
+
+iceServers.iceTransportPolicy = "all";
+
+toggleConnectionMode.textContent = "切换为中继模式";
+
+connectionModeDisplay.textContent = "正常模式";
+
+log('已切换到正常模式', 'info');
+
+}
+
+
+showStatusMessage(`已切换到${isRelayMode ? '强制中继' : '正常'}模式`, 2000);
+
+}
+
+
+// 记录连接统计数据
+
+async function logConnectionStats() {
+
+if (!peerConnection) return;
+
+
+try {
+
+const stats = await peerConnection.getStats();
+
+let candidatePairFound = false;
+
+
+stats.forEach(report => {
+
+if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+
+candidatePairFound = true;
+
+log('活跃的候选者对类型: ' + JSON.stringify(report), 'success');
+
+
+// 查找相关的候选者
+
+const localCandidate = stats.get(report.localCandidateId);
+
+const remoteCandidate = stats.get(report.remoteCandidateId);
+
+
+if (localCandidate) {
+
+log('本地候选者: 类型=' + localCandidate.candidateType +
+
+', 协议=' + localCandidate.protocol +
+
+', IP=' + localCandidate.ip, 'success');
+
+}
+
+
+if (remoteCandidate) {
+
+log('远程候选者: 类型=' + remoteCandidate.candidateType +
+
+', 协议=' + remoteCandidate.protocol +
+
+', IP=' + remoteCandidate.ip, 'success');
+
+}
+
+}
+
+});
+
+
+if (!candidatePairFound) {
+
+log('未找到活跃的候选者对', 'warning');
+
+}
+
+} catch (e) {
+
+log('获取连接统计失败: ' + e.message, 'error');
+
+}
+
+}
+
+
+// 创建WebRTC连接
+
+async function createPeerConnection() {
+
+if (peerConnection) {
+
+peerConnection.close();
+
+peerConnection = null;
+
+}
+
+
+// 清理任何现有的超时定时器
+
+if (iceTimeoutId) {
+
+clearTimeout(iceTimeoutId);
+
+iceTimeoutId = null;
+
+}
+
+
+if (iceGatheringTimeoutId) {
+
+clearTimeout(iceGatheringTimeoutId);
+
+iceGatheringTimeoutId = null;
+
+}
+
+try {
+
+peerConnection = new RTCPeerConnection(iceServers);
+
+log('新建 PeerConnection，ICE 配置为: ' + JSON.stringify(iceServers), 'info');
+
+
+// ICE 候选发送
+
+peerConnection.onicecandidate = event => {
+
+if (event.candidate && currentRoom) {
+
+// 记录详细的候选者信息用于调试
+
+if (event.candidate.candidate) {
+
+const candidateInfo = event.candidate.candidate.split(' ');
+
+const candidateType = candidateInfo[7] || 'unknown';
+
+log(`发送 ${candidateType} 类型的 ICE 候选: ${event.candidate.candidate}`, 'info');
+
+} else {
+
+log('发送空 ICE 候选', 'info');
+
+}
+
+
+socket.emit('ice-candidate', {
+
+roomId: currentRoom,
+
+from: socket.id, // 添加发送方ID
+
+candidate: event.candidate
+
+});
+
+} else if (!event.candidate) {
+
+log('ICE 候选收集完毕', 'info');
+
+}
+
+};
+
+
+// 添加ICE收集状态监控
+
+peerConnection.onicegatheringstatechange = () => {
+
+log('ICE收集状态: ' + peerConnection.iceGatheringState, 'info');
+
+
+if (peerConnection.iceGatheringState === 'gathering') {
+
+// 设置ICE收集超时
+
+iceGatheringTimeoutId = setTimeout(() => {
+
+if (peerConnection && peerConnection.iceGatheringState === 'gathering') {
+
+log('ICE收集超时，可能缺少某些候选者', 'warning');
+
+}
+
+}, 10000); // 10秒超时
+
+} else if (peerConnection.iceGatheringState === 'complete') {
+
+// 清除收集超时
+
+if (iceGatheringTimeoutId) {
+
+clearTimeout(iceGatheringTimeoutId);
+
+iceGatheringTimeoutId = null;
+
+}
+
+
+log('ICE收集已完成', 'success');
+
+}
+
+};
+
+
+// 添加ICE连接状态监控
+peerConnection.oniceconnectionstatechange = async () => {
+    log('ICE连接状态: ' + peerConnection.iceConnectionState, 'info');
+
+    if (peerConnection.iceConnectionState === 'checking') {
+        updateConnectionState('connecting');
+        
+        // 设置检查超时
+        iceTimeoutId = setTimeout(() => {
+            if (peerConnection && peerConnection.iceConnectionState === 'checking') {
+                log('ICE检查超时，尝试重启ICE', 'warning');
+                try {
+                    peerConnection.restartIce();
+                } catch (e) {
+                    log('重启ICE失败: ' + e.message, 'error');
+                }
+            }
+        }, 15000);
+    } else if (peerConnection.iceConnectionState === 'connected' || 
+               peerConnection.iceConnectionState === 'completed') {
+        updateConnectionState('connected');
+        
+        if (iceTimeoutId) {
+            clearTimeout(iceTimeoutId);
+            iceTimeoutId = null;
+        }
+
+        log('ICE连接已建立', 'success');
+        setTimeout(() => logConnectionStats(), 1000);
+        connectionAttempts = 0;
+    } else if (peerConnection.iceConnectionState === 'failed') {
+        log('ICE连接失败', 'error');
+        
+        if (iceTimeoutId) {
+            clearTimeout(iceTimeoutId);
+            iceTimeoutId = null;
+        }
+
+        connectionAttempts++;
+        if (connectionAttempts < MAX_CONNECTION_ATTEMPTS) {
+            if (!isRelayMode) {
+                log('尝试切换到强制中继模式', 'warning');
+                toggleMode();
+                await recreateConnection();
+            } else {
+                log('尝试重新启动ICE', 'warning');
+                try {
+                    peerConnection.restartIce();
+                } catch (e) {
+                    log('重启ICE失败: ' + e.message, 'error');
+                    updateConnectionState('failed');
+                    endCall();
+                }
+            }
+        } else {
+            log('达到最大连接尝试次数，结束通话', 'error');
+            updateConnectionState('failed');
+            endCall();
+            showStatusMessage('无法建立连接，请检查网络后重试', 5000);
+        }
+    }
+};
+
+// 连接状态变化
+
+peerConnection.onconnectionstatechange = () => {
+    log('PeerConnection 状态: ' + peerConnection.connectionState, 'info');
+
+    if (peerConnection.connectionState === 'connected') {
+        updateConnectionState('connected');
+        showStatusMessage('连接已建立', 3000);
+        log('WebRTC连接已成功建立', 'success');
+    } else if (peerConnection.connectionState === 'disconnected' ||
+               peerConnection.connectionState === 'failed' ||
+               peerConnection.connectionState === 'closed') {
+        log('连接已断开或失败，状态: ' + peerConnection.connectionState, 'warning');
+        updateConnectionState('disconnected');
+        endCall();
+    }
+};
+
+
+// 接收远程流
+
+peerConnection.ontrack = event => {
+
+log('接收到远程媒体轨道: ' + event.track.kind, 'success');
+
+
+if (event.streams && event.streams[0]) {
+
+remoteVideo.srcObject = event.streams[0];
+
+remoteAudio.srcObject = event.streams[0];
+
+
+// 设置音频可视化
+
+setupAudioAnalysis(event.streams[0]);
+
+}
+
+};
+
+
+// 添加本地流轨道
+
+if (localStream) {
+  log('添加本地媒体轨道到连接...', 'info');
+  
+  // 显示轨道信息
+  const videoTracks = localStream.getVideoTracks();
+  const audioTracks = localStream.getAudioTracks();
+  log(`准备添加轨道: 视频=${videoTracks.length}, 音频=${audioTracks.length}`, 'info');
+  
+  // 优先添加视频轨道，确保它出现在SDP的前面
+  if (videoTracks.length > 0) {
+    const videoTrack = videoTracks[0];
+    const sender = peerConnection.addTrack(videoTrack, localStream);
+    log(`已添加视频轨道: ID=${videoTrack.id}`, 'success');
+  }
+  
+  // 添加音频轨道
+  if (audioTracks.length > 0) {
+    const audioTrack = audioTracks[0];
+    const sender = peerConnection.addTrack(audioTrack, localStream);
+    log(`已添加音频轨道: ID=${audioTrack.id}`, 'success');
+  }
+  
+  // 检查添加是否成功
+  const senders = peerConnection.getSenders();
+  log(`添加后的发送器数量: ${senders.length}`, 'info');
+  senders.forEach((sender, index) => {
+    if (sender.track) {
+      log(`发送器[${index}]: 类型=${sender.track.kind}, ID=${sender.track.id}`, 'info');
+    } else {
+      log(`发送器[${index}]: 无轨道`, 'warning');
+    }
+  });
+} else {
+  log('未获取到本地媒体流，不能发送音视频', 'warning');
+}
+
+
+return peerConnection;
+
+} catch (error) {
+
+log('创建PeerConnection失败: ' + error.message, 'error');
+
+throw error;
+
+}
+
+}
+
+
+// 重新创建连接
+
+async function recreateConnection() {
+
+try {
+
+log('重新创建WebRTC连接', 'info');
+
+
+await createPeerConnection();
+
+const offer = await createAndSendOffer();
+
+
+// 重新发送offer
+
+socket.emit('reoffer', {
+
+roomId: currentRoom,
+
+sdp: offer
+
+});
+
+
+showStatusMessage('正在尝试重新连接...', 3000);
+
+} catch (error) {
+
+log('重新创建连接失败: ' + error.message, 'error');
+
+endCall();
+
+}
+
+}
+
+
+// 获取媒体流
+
+async function getLocalStream() {
+  try {
+    const constraints = {
+      audio: true,
+      video: {
+        width: { ideal: 640, max: 1280 },   // 降低理想分辨率
+        height: { ideal: 480, max: 720 },   // 降低理想分辨率
+        frameRate: { ideal: 15, max: 30 },  // 降低帧率
+        facingMode: 'environment'           // 使用后置摄像头
+      }
+    };
+
+    log('尝试获取媒体流 (音频+视频)...', 'info');
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    localVideo.srcObject = stream;
+    
+    // 验证获取的流内容
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    log(`成功获取媒体流: 视频轨道=${videoTracks.length}, 音频轨道=${audioTracks.length}`, 'success');
+    
+    if (videoTracks.length > 0) {
+      const videoTrack = videoTracks[0];
+      log(`视频轨道信息: ID=${videoTrack.id}, 启用=${videoTrack.enabled}, 已结束=${videoTrack.readyState === 'ended'}`, 'info');
+      // 获取视频轨道设置
+      const settings = videoTrack.getSettings();
+      log(`视频设置: ${settings.width}x${settings.height}, ${settings.frameRate}fps`, 'info');
+    } else {
+      log('警告: 没有获取到视频轨道', 'warning');
+    }
+    
+    return stream;
+  } catch (error) {
+    log('获取媒体流失败: ' + error.message, 'error');
+    showStatusMessage('无法访问摄像头和麦克风，请检查权限设置', 5000);
+
+    // 尝试只获取音频
+    try {
+      log('尝试只获取音频流...', 'info');
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      log('成功获取音频流', 'success');
+      return audioStream;
+    } catch (audioError) {
+      log('获取音频流失败: ' + audioError.message, 'error');
+      showStatusMessage('无法访问麦克风，请检查权限设置', 5000);
+      throw audioError;
+    }
+  }
+}
+
+
+// 创建并发送offer
+
+async function createAndSendOffer() {
+  try {
+    log('创建SDP offer...', 'info');
+    
+    // 为视频设置更好的参数
+    const offerOptions = {
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: false,  // 盲人端不需要接收视频
+      voiceActivityDetection: true,
+      iceRestart: false
+    };
+    
+    const offer = await peerConnection.createOffer(offerOptions);
+    
+    // 修改SDP，优化视频质量
+    let sdp = offer.sdp;
+    
+    // 设置视频为高优先级
+    sdp = sdp.replace(/a=mid:(\d+)/g, (match, p1) => {
+      if (sdp.indexOf(`a=mid:${p1}\r\na=msid`) > -1 && 
+          sdp.indexOf(`a=mid:${p1}\r\n`) > -1 && 
+          sdp.indexOf('m=video') > -1) {
+        return `${match}\r\na=content:main`;
+      }
+      return match;
+    });
+    
+    // 设置中等码率，不要太高
+    if (sdp.includes('m=video')) {
+      // 限制最大码率为1000kbps
+      sdp = sdp.replace(/m=video.*\r\n/g, 
+        '$&b=AS:1000\r\n');
+    }
+    
+    // 修改后的Offer
+    const modifiedOffer = new RTCSessionDescription({
+      type: 'offer',
+      sdp: sdp
+    });
+    
+    log('设置本地描述...', 'info');
+    await peerConnection.setLocalDescription(modifiedOffer);
+    log('设置本地描述成功', 'success');
+    
+    return modifiedOffer;
+  } catch (error) {
+    log('创建offer失败: ' + error.message, 'error');
+    showStatusMessage('创建通话请求失败，请重试', 3000);
+    throw error;
+  }
+}
+
+
+// 拨打电话
+
+async function makeCall() {
+
+try {
+
+// 重置连接尝试计数
+
+connectionAttempts = 0;
+
+
+// 禁用拨号按钮
+
+callButton.disabled = true;
+
+
+// 更新状态
+
+connectionStatus.className = 'status-indicator status-connecting';
+
+statusText.textContent = '正在连接...';
+
+callStateDisplay.innerHTML = '<p class="text-lg font-medium mb-2">正在呼叫志愿者...</p><p class="text-gray-500 text-sm">请稍候</p>';
+
+
+log('开始呼叫流程', 'info');
+
+
+// 获取本地媒体流
+
+localStream = await getLocalStream();
+
+
+// 创建对等连接
+
+await createPeerConnection();
+
+
+// 创建offer
+
+const offer = await createAndSendOffer();
+
+
+// 发送通话请求
+
+log('发送通话请求', 'info');
+
+socket.emit('call_request', {
+
+userId: userId,
+
+requirements: '视频辅助', // 可以根据需要修改
+
+offer: offer
+
+});
+
+
+showStatusMessage('已发送通话请求，等待志愿者接听...', 3000);
+
+} catch (error) {
+
+log('拨打电话失败: ' + error.message, 'error');
+
+resetCall();
+
+}
+
+}
+
+
+// 结束通话
+
+function endCall() {
+
+if (currentRoom) {
+
+log('发送结束通话信号', 'info');
+
+socket.emit('end_call', { roomId: currentRoom });
+
+}
+
+
+resetCall();
+
+showStatusMessage('通话已结束', 3000);
+
+}
+
+
+// 重置通话状态
+
+function resetCall() {
+    log('重置通话状态', 'info');
+    stopCallTimer();
+    
+    if (iceTimeoutId) {
+        clearTimeout(iceTimeoutId);
+        iceTimeoutId = null;
+    }
+    
+    if (iceGatheringTimeoutId) {
+        clearTimeout(iceGatheringTimeoutId);
+        iceGatheringTimeoutId = null;
+    }
+    
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+        log('已关闭WebRTC连接', 'info');
+    }
+    
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+        log('已停止本地媒体流', 'info');
+    }
+    
+    remoteVideo.srcObject = null;
+    remoteAudio.srcObject = null;
+    
+    if (audioContext) {
+        audioContext.close().catch(e => log('关闭音频上下文失败: ' + e.message, 'error'));
+        audioContext = null;
+        analyser = null;
+    }
+    
+    audioVisualizer.classList.add('hidden');
+    callButton.disabled = false;
+    callButton.classList.remove('hidden');
+    endCallButton.classList.add('hidden');
+    
+    updateConnectionState('idle');
+    
+    currentRoom = null;
+    currentRequestId = null;
+}
+
+
+// 处理通话接受
+
+async function handleCallAccepted(data) {
+
+try {
+
+log('通话请求被接受: ' + JSON.stringify(data), 'success');
+
+currentRoom = data.roomId;
+
+
+// 如果收到answer，设置远程描述
+
+if (data.answer) {
+
+log('收到SDP answer，设置远程描述', 'info');
+
+await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+log('设置远程描述成功', 'success');
+
+}
+
+
+// 更新UI
+
+callButton.classList.add('hidden');
+
+endCallButton.classList.remove('hidden');
+
+callStateDisplay.innerHTML = '<p class="text-lg font-medium mb-2">通话已接通</p><p class="text-gray-500 text-sm">正在与志愿者通话中</p>';
+
+
+// 开始计时
+
+startCallTimer();
+
+
+showStatusMessage('通话已接通', 3000);
+
+} catch (error) {
+
+log('处理通话接受失败: ' + error.message, 'error');
+
+resetCall();
+
+}
+
+}
+
+
+// 处理通话拒绝
+
+function handleCallRejected(data) {
+
+log('通话被拒绝: ' + JSON.stringify(data), 'warning');
+
+resetCall();
+
+showStatusMessage(`通话被拒绝: ${data.reason || '无原因'}`, 3000);
+
+}
+
+
+// 处理通话超时
+
+function handleCallTimeout(data) {
+
+log('通话请求超时: ' + JSON.stringify(data), 'warning');
+
+resetCall();
+
+showStatusMessage('通话请求超时，请稍后重试', 3000);
+
+}
+
+
+// 处理排队状态
+
+function handleCallQueued(data) {
+
+log('通话请求排队中: ' + JSON.stringify(data), 'info');
+
+currentRequestId = data.requestId;
+
+callStateDisplay.innerHTML = '<p class="text-lg font-medium mb-2">排队等待中...</p><p class="text-gray-500 text-sm">目前没有可用志愿者，请稍候</p>';
+
+showStatusMessage('排队等待中，请稍候', 3000);
+
+}
+
+
+// 处理通话结束
+
+function handleCallEnded(data) {
+
+log('通话被结束: ' + JSON.stringify(data), 'info');
+
+resetCall();
+
+showStatusMessage('通话已结束', 3000);
+
+}
+
+
+// 处理远程offer
+
+async function handleRemoteOffer(data) {
+
+try {
+
+log('收到远程SDP offer', 'info');
+
+await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+
+log('设置远程描述成功，创建answer', 'success');
+
+
+const answer = await peerConnection.createAnswer();
+
+await peerConnection.setLocalDescription(answer);
+
+log('设置本地描述成功，发送answer', 'success');
+
+
+socket.emit('answer', {
+
+roomId: currentRoom,
+
+sdp: answer
+
+});
+
+} catch (error) {
+
+log('处理远程offer失败: ' + error.message, 'error');
+
+}
+
+}
+
+
+// 处理远程answer
+
+async function handleRemoteAnswer(data) {
+
+try {
+
+log('收到远程SDP answer', 'info');
+
+const answer = new RTCSessionDescription(data.sdp);
+
+await peerConnection.setRemoteDescription(answer);
+
+log('设置远程描述成功', 'success');
+
+} catch (error) {
+
+log('处理远程answer失败: ' + error.message, 'error');
+
+}
+
+}
+
+
+// 处理ICE候选
+
+async function handleIceCandidate(data) {
+
+try {
+
+if (data.candidate && peerConnection) {
+
+let candidateInfo = '';
+
+if (data.candidate.candidate) {
+
+candidateInfo = data.candidate.candidate.split(' ');
+
+const candidateType = candidateInfo[7] || 'unknown';
+
+log(`收到 ${candidateType} 类型的 ICE 候选: ${data.candidate.candidate}`, 'info');
+
+} else {
+
+log('收到空ICE候选', 'info');
+
+}
+
+
+await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+
+log('成功添加ICE候选', 'success');
+
+}
+
+} catch (error) {
+
+log('处理ICE候选失败: ' + error.message, 'error');
+
+}
+
+}
+
+
+// Socket.io 事件监听
+
+socket.on('connect', () => {
+
+log('已连接到信令服务器', 'success');
+
+socket.emit('user_online', { userId, userType: 'user' });
+
+});
+
+
+socket.on('disconnect', () => {
+
+log('与信令服务器断开连接', 'warning');
+
+resetCall();
+
+});
+
+
+socket.on('call_accepted', handleCallAccepted);
+
+socket.on('call_rejected', handleCallRejected);
+
+socket.on('call_timeout', handleCallTimeout);
+
+socket.on('call_queued', handleCallQueued);
+
+socket.on('call_ended', handleCallEnded);
+
+
+socket.on('offer', handleRemoteOffer);
+
+socket.on('answer', handleRemoteAnswer);
+
+socket.on('ice-candidate', handleIceCandidate);
+
+socket.on('reoffer', handleRemoteOffer); // 处理重新发送的offer
+
+
+socket.on('peer-left', () => {
+
+log('对方已离开', 'warning');
+
+endCall();
+
+});
+
+
+socket.on('error', (error) => {
+
+log('信令服务器错误: ' + JSON.stringify(error), 'error');
+
+showStatusMessage(`发生错误: ${error.message || '未知错误'}`, 3000);
+
+});
+
+
+// 按钮事件监听
+
+callButton.addEventListener('click', makeCall);
+
+endCallButton.addEventListener('click', endCall);
+
+toggleConnectionMode.addEventListener('click', toggleMode);
+
+
+// 初始化
+
+initAudioVisualizer();
+
+
+// 页面关闭前清理
+
+window.addEventListener('beforeunload', () => {
+
+endCall();
+
+socket.disconnect();
+
+});
+
+
+// 启用音频播放（解决移动设备上的自动播放限制）
+
+document.body.addEventListener('click', () => {
+
+remoteAudio.play().catch(error => log('自动播放失败: ' + error.message, 'warning'));
+
+}, { once: true });
+
+
+// 注册一些调试帮助函数到全局作用域
+
+window.testICE = async function() {
+
+if (!peerConnection) {
+
+log('没有活跃的连接可以测试', 'warning');
+
+return;
+
+}
+
+
+try {
+
+await logConnectionStats();
+
+log('ICE连接状态: ' + peerConnection.iceConnectionState, 'info');
+
+log('信令状态: ' + peerConnection.signalingState, 'info');
+
+log('连接状态: ' + peerConnection.connectionState, 'info');
+
+} catch (e) {
+
+log('测试ICE失败: ' + e.message, 'error');
+
+}
+
+};
+
+
+// 更新状态显示
+function updateConnectionState(newState) {
+    if (newState === lastConnectionState) return;
+    lastConnectionState = newState;
+    connectionState = newState;
+
+    // 更新状态指示器
+    switch(newState) {
+        case 'idle':
+            connectionStatus.className = 'status-indicator status-idle';
+            statusText.textContent = '未连接';
+            callStateDisplay.innerHTML = '<p class="text-lg font-medium mb-2">点击按钮呼叫志愿者</p><p class="text-gray-500 text-sm">志愿者将会通过视频为您提供帮助</p>';
+            break;
+        case 'connecting':
+            connectionStatus.className = 'status-indicator status-connecting';
+            statusText.textContent = '正在连接...';
+            callStateDisplay.innerHTML = '<p class="text-lg font-medium mb-2">正在呼叫志愿者...</p><p class="text-gray-500 text-sm">请稍候</p>';
+            break;
+        case 'connected':
+            connectionStatus.className = 'status-indicator status-connected';
+            statusText.textContent = '已连接';
+            callStateDisplay.innerHTML = '<p class="text-lg font-medium mb-2">通话已连接</p><p class="text-gray-500 text-sm">正在进行视频辅助</p>';
+            break;
+        case 'failed':
+            connectionStatus.className = 'status-indicator status-idle';
+            statusText.textContent = '连接失败';
+            callStateDisplay.innerHTML = '<p class="text-lg font-medium mb-2">连接失败</p><p class="text-gray-500 text-sm">请重试</p>';
+            break;
+        case 'disconnected':
+            connectionStatus.className = 'status-indicator status-idle';
+            statusText.textContent = '已断开';
+            callStateDisplay.innerHTML = '<p class="text-lg font-medium mb-2">通话已结束</p><p class="text-gray-500 text-sm">点击按钮重新呼叫</p>';
+            break;
+    }
+}
+
+</script>
+
+</body>
+
+</html>

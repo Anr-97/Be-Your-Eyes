@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LansHive 志愿者客户端</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .status-box {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .call-request {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .video-container {
+            display: none;
+            background-color: #000;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .accept-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .reject-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online {
+            background-color: #4CAF50;
+        }
+        .status-connecting {
+            background-color: #FFC107;
+            animation: blink 1s infinite;
+        }
+        .status-error {
+            background-color: #f44336;
+        }
+        .status-busy {
+            background-color: #FFC107;
+        }
+        .status-offline {
+            background-color: #9E9E9E;
+        }
+        @keyframes blink {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.5);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: none;
+        }
+        .controls button {
+            margin: 0 5px;
+        }
+        .end-call-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .settings-form {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .settings-form label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        .settings-form input {
+            padding: 8px;
+            width: 100%;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .settings-form button {
+            background-color: #2196F3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LansHive 志愿者平台</h1>
+        </header>
+
+        <div class="settings-form" id="loginForm">
+            <h2>志愿者登录</h2>
+            <label for="volunteerId">志愿者ID:</label>
+            <input type="text" id="volunteerId" placeholder="输入您的志愿者ID" required>
+            <button id="loginBtn">登录</button>
+        </div>
+
+        <div class="status-box" id="statusBox" style="display: none;">
+            <h2>状态信息</h2>
+            <p>
+                <span class="status-indicator status-online" id="statusIndicator"></span>
+                <span id="statusText">在线</span>
+            </p>
+        </div>
+
+        <div class="call-request" id="callRequest">
+            <h2>收到通话请求</h2>
+            <p>盲人用户 <span id="callerId">-</span> 正在请求通话帮助</p>
+            <p>需求描述: <span id="requirements">-</span></p>
+            <button class="accept-btn" id="acceptBtn">接受</button>
+            <button class="reject-btn" id="rejectBtn">拒绝</button>
+        </div>
+
+        <div class="video-container" id="videoContainer">
+            <video id="remoteVideo" autoplay></video>
+            <div class="controls" id="callControls">
+                <button class="end-call-btn" id="endCallBtn">结束通话</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const volunteerId = document.getElementById('volunteerId');
+            const loginBtn = document.getElementById('loginBtn');
+            const statusBox = document.getElementById('statusBox');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const callRequest = document.getElementById('callRequest');
+            const callerId = document.getElementById('callerId');
+            const requirements = document.getElementById('requirements');
+            const acceptBtn = document.getElementById('acceptBtn');
+            const rejectBtn = document.getElementById('rejectBtn');
+            const videoContainer = document.getElementById('videoContainer');
+            const remoteVideo = document.getElementById('remoteVideo');
+            const callControls = document.getElementById('callControls');
+            const endCallBtn = document.getElementById('endCallBtn');
+
+            let socket;
+            let peerConnections = {};
+            let currentRequestId;
+            let currentRoomId;
+            let currentUserId;
+            let peerConnection; // 保留兼容性
+
+            // WebRTC 配置
+const peerConfig = {
+  iceServers: [
+    {
+      urls: "stun:stun.l.google.com:19302"
+    },
+    {
+      urls: "turn:www.lanshive.xyz:3478",
+      username: "lanshive",
+      credential: "2382021041zl"
+    },
+    {
+      urls: "turns:www.lanshive.xyz:5349",
+      username: "lanshive",
+      credential: "2382021041zl"
+    }
+  ],
+  iceTransportPolicy: "all"
+};    
+
+            // 添加ICE候选暂存机制
+            let pendingIceCandidates = [];
+            let peerConnectionInitialized = false;
+
+            // 初始化WebRTC连接
+            function initPeerConnection(targetClientId) {
+                peerConnectionInitialized = false;
+                pendingIceCandidates = []; // 清空暂存的候选者
+                
+                // 如果已存在连接，先关闭
+                if (peerConnections[targetClientId]) {
+                    console.log(`关闭到客户端 ${targetClientId} 的现有连接`);
+                    peerConnections[targetClientId].close();
+                }
+                
+                if (!currentRoomId && currentRequestId) {
+                    currentRoomId = `call_${currentRequestId}`;
+                    console.log(`初始化连接时设置房间ID: ${currentRoomId}`);
+                }
+                
+                console.log(`初始化到 ${targetClientId || '未知客户端'} 的新 RTCPeerConnection`);
+                const pc = new RTCPeerConnection(peerConfig);
+                if (targetClientId) {
+                    peerConnections[targetClientId] = pc;
+                }
+                
+                // 处理ICE候选
+                pc.onicecandidate = event => {
+                    if (event.candidate) {
+                        console.log(`生成ICE候选 [${event.candidate.sdpMLineIndex}/${event.candidate.sdpMid}]`);
+                        
+                        if (!currentRoomId) {
+                            // 如果没有房间ID，先暂存候选者
+                            console.log('暂时没有roomId，将ICE候选暂存');
+                            pendingIceCandidates.push(event.candidate);
+                        } else {
+                            // 有房间ID，直接发送
+                            console.log(`发送ICE候选到房间: ${currentRoomId}`);
+                        socket.emit('ice-candidate', {
+                            roomId: currentRoomId,
+                            candidate: event.candidate
+                        });
+                        }
+                    } else {
+                        console.log('ICE候选收集完成');
+                        peerConnectionInitialized = true;
+                        
+                        // 发送所有暂存的候选者
+                        if (currentRoomId && pendingIceCandidates.length > 0) {
+                            console.log(`发送${pendingIceCandidates.length}个暂存的ICE候选`);
+                            pendingIceCandidates.forEach(candidate => {
+                                socket.emit('ice-candidate', {
+                                    roomId: currentRoomId,
+                                    candidate: candidate
+                                });
+                            });
+                            pendingIceCandidates = []; // 清空暂存
+                        }
+                    }
+                };
+                
+                // 监听连接状态变化
+                pc.onconnectionstatechange = () => {
+                    console.log(`连接到 ${targetClientId} 的状态变更: ${pc.connectionState}`);
+                    switch(pc.connectionState) {
+                        case 'connected':
+                            console.log(`成功连接到客户端 ${targetClientId}`);
+                            break;
+                        case 'disconnected':
+                            console.log(`与客户端 ${targetClientId} 的连接断开`);
+                            break;
+                        case 'failed':
+                            console.log(`连接到客户端 ${targetClientId} 失败, 尝试重新建立连接...`);
+                            break;
+                        case 'closed':
+                            console.log(`连接到客户端 ${targetClientId} 已关闭`);
+                            break;
+                    }
+                };
+                
+                // 处理远程流
+                pc.ontrack = event => {
+                    console.log(`从客户端 ${targetClientId} 接收到媒体轨道:`, event.track.kind);
+                    remoteVideo.srcObject = event.streams[0];
+                    
+                    // 显示视频通话区域
+                        videoContainer.style.display = 'block';
+                    callControls.style.display = 'block';
+                    
+                    // 当流添加到视频元素时记录
+                    event.streams[0].onaddtrack = e => {
+                        console.log(`添加 ${e.track.kind} 轨道到远程视频元素`);
+                    };
+                };
+                
+                // 兼容性：设置全局peerConnection
+                peerConnection = pc;
+                
+                return pc;
+            }
+
+            // 登录处理
+            loginBtn.addEventListener('click', function() {
+                const id = volunteerId.value.trim();
+                if (!id) {
+                    alert('请输入志愿者ID');
+                    return;
+                }
+
+                // 连接到信令服务器
+	socket = io('https://www.lanshive.xyz:8080', {
+    transports: ['websocket', 'polling'], // 优先使用WebSocket，再尝试轮询
+    reconnectionDelayMax: 10000,
+    withCredentials: true
+});
+
+                // 建立连接后发送用户在线消息
+                socket.on('connect', function() {
+                    console.log('已连接到服务器，Socket ID:', socket.id);
+                    socket.emit('user_online', {
+                        userId: id,
+                        userType: 'volunteer'
+                    });
+
+                    // 显示状态信息
+                    loginForm.style.display = 'none';
+                    statusBox.style.display = 'block';
+                });
+
+                // 处理来电请求
+                socket.on('incoming_call', function(data) {
+                    currentRequestId = data.requestId;
+                    currentUserId = data.userId;
+                    callerId.textContent = data.userId;
+                    requirements.textContent = data.requirements || '没有提供需求描述';
+                    callRequest.style.display = 'block';
+
+                    // ✨ 重要：提前设置房间ID
+                    currentRoomId = `call_${data.requestId}`;
+                    console.log(`提前设置房间ID: ${currentRoomId}`);
+
+                    statusIndicator.className = 'status-indicator status-busy';
+                    statusText.textContent = '有待处理的通话请求';
+
+                    // 在收到offer时，需要保存以便接受通话时使用
+                    if (data.offer) {
+                        console.log('收到来电附带的offer');
+                        window.receivedOffer = data.offer;
+                    }
+                });
+
+                // 处理志愿者状态更新
+                socket.on('volunteer_status_update', function(data) {
+                    if (data.volunteerId === id) {
+                        if (data.status === 'available') {
+                            statusIndicator.className = 'status-indicator status-online';
+                            statusText.textContent = '在线，等待通话请求';
+                        } else if (data.status === 'busy') {
+                            statusIndicator.className = 'status-indicator status-busy';
+                            statusText.textContent = '忙碌中';
+                        } else if (data.status === 'offline') {
+                            statusIndicator.className = 'status-indicator status-offline';
+                            statusText.textContent = '离线';
+                        }
+                    }
+                });
+
+                // 处理来自远程的ICE候选者
+                socket.on('ice_candidate', function(data) {
+                    try {
+                        console.log('收到ICE候选者:', {
+                            roomId: data.roomId,
+                            from: data.from,
+                            candidateType: data.candidate ? data.candidate.type : 'undefined'
+                        });
+                        
+                        // 验证房间ID和本地房间ID匹配
+                        if (data.roomId && (!currentRoomId || currentRoomId !== data.roomId)) {
+                            currentRoomId = data.roomId;
+                            console.log(`从ICE候选者更新房间ID: ${currentRoomId}`);
+                        }
+                        
+                        // 检查PeerConnection是否存在
+                        if (!peerConnection) {
+                            console.log('PeerConnection不存在，初始化新的连接');
+                            initPeerConnection();
+                        }
+                        
+                        // 添加ICE候选者
+                        peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate))
+                            .then(() => {
+                                console.log('成功添加ICE候选者');
+                            })
+                            .catch(e => {
+                                console.error('添加ICE候选者失败:', e);
+                            });
+                    } catch (e) {
+                        console.error('处理ICE候选者失败:', e);
+                    }
+                });
+
+                // 处理房间连接和通话建立
+                socket.on('call_accepted', function(data) {
+                    console.log('收到call_accepted事件:', data);
+                    
+                    // 确保设置正确的房间ID
+                    if (data.roomId) {
+                    currentRoomId = data.roomId;
+                        console.log(`从服务器接收到房间ID: ${currentRoomId}`);
+                    } else if (currentRequestId && !currentRoomId) {
+                        // 如果服务器没有提供房间ID但我们有请求ID，则构造房间ID
+                        currentRoomId = `call_${currentRequestId}`;
+                        console.log(`根据请求ID构造房间ID: ${currentRoomId}`);
+                    }
+                    
+                    // 验证并记录当前房间ID
+                    if (!currentRoomId) {
+                        console.error('警告: 房间ID未设置，ICE候选可能无法正确发送');
+                    } else {
+                        console.log(`准备加入房间: ${currentRoomId}`);
+                    joinRoom(currentRoomId);
+                        
+                        // 重要：发送所有暂存的ICE候选
+                        if (pendingIceCandidates.length > 0) {
+                            console.log(`发送${pendingIceCandidates.length}个暂存的ICE候选`);
+                            pendingIceCandidates.forEach(candidate => {
+                                socket.emit('ice-candidate', {
+                                    roomId: currentRoomId,
+                                    candidate: candidate
+                                });
+                            });
+                            pendingIceCandidates = []; // 清空暂存
+                        }
+                    }
+                });
+
+                // 处理对方离开
+                socket.on('peer-left', function(data) {
+                    console.log('对方离开了通话');
+                    endCall();
+                });
+
+                // 在房间中接收到远程offer
+                socket.on('offer', async function(data) {
+                    try {
+                        // 记录offer信息和房间信息
+                        console.log('收到offer事件:', {
+                            roomId: data.roomId,
+                            from: data.from,
+                            sdpLength: data.sdp ? data.sdp.length : 'undefined'
+                        });
+                        
+                        // 如果data中提供了房间ID，则更新当前房间ID
+                        if (data.roomId) {
+                            currentRoomId = data.roomId;
+                            console.log(`从offer更新房间ID: ${currentRoomId}`);
+                        }
+                        
+                        // 验证房间ID
+                        if (!currentRoomId) {
+                            console.error('警告: 处理offer时房间ID未设置，将尝试使用requestId');
+                            if (currentRequestId) {
+                                currentRoomId = `call_${currentRequestId}`;
+                                console.log(`使用requestId构造房间ID: ${currentRoomId}`);
+                            } else {
+                                console.error('无法构造房间ID，没有requestId');
+                            }
+                        }
+                        
+                        const offer = {
+                            type: 'offer',
+                            sdp: data.sdp
+                        };
+                        
+                        // 使用发送方ID初始化连接
+                        const fromPeerId = data.from;
+                        console.log(`为发送方 ${fromPeerId} 初始化PeerConnection`);
+                        const pc = initPeerConnection(fromPeerId);
+                        
+                        console.log('开始处理远程SDP offer');
+                        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                        console.log('远程描述设置成功，创建answer');
+                        
+                        const answer = await pc.createAnswer();
+                        console.log('Answer创建成功');
+                        
+                        await pc.setLocalDescription(answer);
+                        console.log('本地描述设置成功，发送answer到信令服务器');
+                        
+                        // 使用当前房间ID发送answer
+                        socket.emit('answer', {
+                            roomId: currentRoomId,
+                            to: fromPeerId,  // 指定接收者
+                            sdp: answer
+                        });
+                        
+                        console.log(`Answer已发送到房间: ${currentRoomId}，接收者: ${fromPeerId}`);
+                    } catch (e) {
+                        console.error('处理offer失败:', e);
+                    }
+                });
+
+                // 错误处理
+                socket.on('connect_error', function(err) {
+                    console.error('连接错误:', {
+                        error: err.toString(),
+                        message: err.message,
+                        type: err.type,
+                        description: err.description,
+                        timestamp: new Date().toISOString()
+                    });
+                    alert('连接到服务器失败: ' + err.message);
+                });
+
+                socket.on('disconnect', function() {
+                    console.log('已断开与服务器的连接');
+                    statusIndicator.className = 'status-indicator status-offline';
+                    statusText.textContent = '已断开连接';
+                });
+            });
+
+            // 接受通话
+            acceptBtn.addEventListener('click', async function() {
+                try {
+                    callRequest.style.display = 'none';
+                    
+                    // 设置当前房间ID
+                    currentRoomId = `call_${currentRequestId}`;
+                    console.log(`设置房间ID: ${currentRoomId}`);
+                    
+                    // 初始化WebRTC连接，传递用户ID作为目标客户端
+                    const pc = initPeerConnection(currentUserId);
+                    console.log(`为用户 ${currentUserId} 创建了PeerConnection`);
+                    
+                    // 处理收到的offer并创建answer
+                    if (window.receivedOffer) {
+                        console.log('处理接收到的offer创建answer');
+                        await pc.setRemoteDescription(new RTCSessionDescription(window.receivedOffer));
+                        console.log('远程描述设置成功，创建answer');
+                        
+                        const answer = await pc.createAnswer();
+                        console.log('Answer创建成功');
+                        
+                        await pc.setLocalDescription(answer);
+                        console.log('本地描述设置成功，发送answer到信令服务器');
+                        
+                        // 发送接受通话请求，包含answer
+                        socket.emit('call_response', {
+                            requestId: currentRequestId,
+                            accepted: true,
+                            answer: answer
+                        });
+                        
+                        statusIndicator.className = 'status-indicator status-busy';
+                        statusText.textContent = '通话中';
+                    } else {
+                        console.error('缺少offer，无法创建answer');
+                        alert('无法创建通话连接，请重试');
+                        
+                        // 如果没有收到offer，仍然接受通话但不发送answer
+                        socket.emit('call_response', {
+                            requestId: currentRequestId,
+                            accepted: true
+                        });
+                    }
+                } catch (error) {
+                    console.error('接受通话过程中出错:', error);
+                    alert('建立连接时出错: ' + error.message);
+                    
+                    // 尝试恢复状态
+                    statusIndicator.className = 'status-indicator status-online';
+                    statusText.textContent = '在线，等待通话请求';
+                }
+            });
+
+            // 拒绝通话
+            rejectBtn.addEventListener('click', function() {
+                socket.emit('call_response', {
+                    requestId: currentRequestId,
+                    accepted: false,
+                    reason: '志愿者暂时无法提供帮助'
+                });
+                
+                callRequest.style.display = 'none';
+                statusIndicator.className = 'status-indicator status-online';
+                statusText.textContent = '在线，等待通话请求';
+                
+                currentRequestId = null;
+                currentUserId = null;
+            });
+
+            // 结束通话
+            endCallBtn.addEventListener('click', function() {
+                endCall();
+            });
+
+            function endCall() {
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+                
+                if (socket && currentRoomId) {
+                    socket.emit('leave', currentRoomId);
+                }
+                
+                remoteVideo.srcObject = null;
+                videoContainer.style.display = 'none';
+                callControls.style.display = 'none';
+                
+                statusIndicator.className = 'status-indicator status-online';
+                statusText.textContent = '在线，等待通话请求';
+                
+                currentRoomId = null;
+            }
+
+            // 加入房间
+            function joinRoom(roomId) {
+                socket.emit('join', roomId, function(response) {
+                    if (response.status === 'success') {
+                        console.log('成功加入房间:', roomId);
+                        currentRoomId = roomId;
+                    } else {
+                        console.error('加入房间失败:', response);
+                        alert('加入房间失败: ' + response.message);
+                    }
+                });
+            }
+
+            // 添加调试辅助函数
+            function checkVideoStatus() {
+                console.log('--- 视频状态检查 ---');
+                
+                if (!remoteVideo.srcObject) {
+                    console.log('远程视频元素没有关联流');
+                    return;
+                }
+                
+                const stream = remoteVideo.srcObject;
+                const videoTracks = stream.getVideoTracks();
+                const audioTracks = stream.getAudioTracks();
+                
+                console.log(`流包含: 视频轨道=${videoTracks.length}, 音频轨道=${audioTracks.length}`);
+                
+                if (videoTracks.length > 0) {
+                    const track = videoTracks[0];
+                    console.log(`视频轨道: 启用=${track.enabled}, 状态=${track.readyState}, 静音=${track.muted}`);
+                }
+                
+                console.log(`视频元素: 宽=${remoteVideo.videoWidth}, 高=${remoteVideo.videoHeight}`);
+                console.log(`视频元素: 暂停=${remoteVideo.paused}, 就绪状态=${remoteVideo.readyState}`);
+                console.log(`视频元素: 显示样式=${window.getComputedStyle(remoteVideo).display}`);
+                console.log(`视频容器: 显示样式=${window.getComputedStyle(videoContainer).display}`);
+            }
+
+            // 添加UI元素以便用户手动触发视频刷新
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.marginTop = '10px';
+            buttonContainer.style.textAlign = 'center';
+
+            const refreshButton = document.createElement('button');
+            refreshButton.textContent = '刷新视频显示';
+            refreshButton.className = 'px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600';
+            refreshButton.onclick = () => {
+                if (remoteVideo.srcObject) {
+                    console.log('手动刷新视频显示');
+                    const stream = remoteVideo.srcObject;
+                    remoteVideo.srcObject = null;
+                    setTimeout(() => {
+                        remoteVideo.srcObject = stream;
+                        remoteVideo.play().catch(e => console.error('刷新后播放失败:', e));
+                        checkVideoStatus();
+                    }, 500);
+                } else {
+                    console.log('没有远程流可以刷新');
+                }
+            };
+
+            buttonContainer.appendChild(refreshButton);
+
+            // 将按钮添加到DOM中
+            if (videoContainer.parentNode) {
+                videoContainer.parentNode.insertBefore(buttonContainer, videoContainer.nextSibling);
+            }
+
+            // 每10秒检查一次视频状态
+            setInterval(checkVideoStatus, 10000);
+        });
+    </script>
+</body>
+</html>

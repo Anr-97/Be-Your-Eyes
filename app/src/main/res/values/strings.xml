@@ -12,4 +12,9 @@
     <string name="mail">邮箱</string>
     <string name="password">密码</string>
     <string name="login">登录</string>
+    <string name="resetpassword">重置密码</string>
+    <string name="helpToreset">请输入您的邮箱，我们将发送重置密码验证码</string>
+    <string name="send_code">发送验证码</string>
+    <string name="forget_password">忘记密码？</string>
+    <string name="register">注册</string>
 </resources>

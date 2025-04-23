@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:width="250dp"
     android:height="250dp"
     android:viewportWidth="250"
-    android:viewportHeight="250">
+    android:viewportHeight="250"
+    tools:ignore="VectorRaster">
 
     <!-- 眼睛外形 -->
     <path
